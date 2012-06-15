@@ -1,43 +1,25 @@
 import scala.util.Random
 
 object Board {
-  def empty:Board = {
-    val board = new Board(Array(" "," "," "),Array(" "," "," "),Array(" "," "," "))
-    board
-  }
+  def empty:Board = new Board(Array(" "," "," "),Array(" "," "," "),Array(" "," "," "))
 }
 
 class Board(row1:Array[String],row2:Array[String],row3:Array[String]) {
   val players = List("X","O")
   val rows = List(row1,row2,row3)
+  val wins = List(
+    List((0,0),(0,1),(0,2)),List((1,0),(1,1),(1,2)),List((2,0),(2,1),(2,2)),
+    List((0,0),(1,0),(2,0)),List((0,1),(1,1),(2,1)),List((0,2),(1,2),(2,2)),
+    List((0,0),(1,1),(2,2)),List((2,0),(1,1),(0,2))
+  )
+
   def valid():Boolean = {
-    if(rows.length != 3) {
-      return false
-    }
-    var v = true
-    rows.foreach {row =>
-      if(row.length != 3) {
-        return false
-      }
-      row.foreach { field =>
-        if((field != "X") && (field != "O") && (field != " ")) {
-          return false
-        }
-      }
-    }
-    return v
+    !(rows.length != 3 || rows.exists(row => {
+        row.length != 3 || row.exists(field => field != "X" && field != "O" && field != " ")
+    }))
   }
 
-  def finished():Boolean = {
-    rows.foreach{ row =>
-      row.foreach{ field =>
-        if(field == " ") {
-          return false
-        }
-      }
-    }
-    true
-  }
+  def finished():Boolean = !rows.exists(row => row.exists(field => field == " "))
 
   def put(player:String,row:Int,column:Int) = {
     rows(row)(column) = player
@@ -46,51 +28,28 @@ class Board(row1:Array[String],row2:Array[String],row3:Array[String]) {
   }
 
   def validMove(player:String, row:Int, column:Int):Boolean = {
-    if(row < 0 || row > 2 || column < 0 || column > 2) {
-      return false
-    }
-
-    if(rows(row)(column) != " ") {
-      return false
-    }
-    true
+    !(row < 0 || row > 2 || column < 0 || column > 2 || rows(row)(column) != " ")
   }
 
   def render = {
-    rows.foreach{ row => 
-      println(row(0) + "|" + row(1) + "|" + row(2))
-    }
+    rows.foreach{ row => println(row(0) + "|" + row(1) + "|" + row(2)) }
   }
 
   def winner():String = {
-    if(!valid) {
+    if(!valid)
       return "INVALID BOARD"
-    }
-    List("X","O").foreach { player =>
-      rows.foreach{ row => 
-        if(row(0) == player && row(1) == player && row(2) == player) {
-          return player
-        }
-      }
-      (0 to 2).foreach { col =>
-        if(rows(0)(col) == player && rows(1)(col) == player && rows(2)(col) == player) {
-          return player
-        }
-      }
-      if(rows(0)(0) == player && rows(1)(1) == player && rows(2)(2) == player) {
-        return player
-      }
 
-      if(rows(0)(2) == player && rows(1)(1) == player && rows(2)(0) == player) {
-        return player
+    wins.foreach( win => {
+      val fieldMap = win.map(field => rows(field._1)(field._2))
+      if(fieldMap == List("X","X","X"))
+        return "X"
+      else {
+        if(fieldMap == List("O","O","O"))
+          return "O"
       }
-    }
+    })
 
-    if(!finished) {
-      return "NOT FINISHED" 
-    } else {
-      return "DRAW"
-    }
+    if(!finished) "NOT FINISHED" else "DRAW"
   }
 
   def start = {
@@ -111,11 +70,7 @@ class Board(row1:Array[String],row2:Array[String],row3:Array[String]) {
         val column = split(1).toInt
         if(validMove(current, row, column)) {
           put(current,row,column)
-          if(current == "X") {
-            current = "O"
-          } else {
-            current = "X"
-          }
+          current = if(current == "X") "O" else "X"
         } else {
           println("MOVE: " + current + ":" + row + " " + column +" is not valid")
         }
@@ -126,32 +81,32 @@ class Board(row1:Array[String],row2:Array[String],row3:Array[String]) {
   }
 }
 
-// Sort of unit tests, need to set it up next time
-//board = new Board(Array("O","X","X","O","X"),Array("O","X","O"),Array("X","O","X"))
-//println("invalid board")
-//println("winner: " + board.winner)
+//Sort of unit tests, need to set it up next time
+var board = new Board(Array("O","X","X","O","X"),Array("O","X","O"),Array("X","O","X"))
+println("invalid board")
+println("winner: " + board.winner)
 
-//var board = new Board(Array("X","O","O"),Array("O","X","O"),Array("X","O","X"))
-//println("X won across board")
-//println("winner: " + board.winner)
+board = new Board(Array("X","O","O"),Array("O","X","O"),Array("X","O","X"))
+println("X won across board")
+println("winner: " + board.winner)
 
-//board = new Board(Array("O","X","O"),Array("O","X","O"),Array("X","O","X"))
-//println("draw board")
-//println("winner: " + board.winner)
+board = new Board(Array("O","X","O"),Array("O","X","O"),Array("X","O","X"))
+println("draw board")
+println("winner: " + board.winner)
 
-//board = new Board(Array(" ","X","O"),Array("O","X","O"),Array("X","O","X"))
-//println("not finished board")
-//println("winner: " + board.winner)
+board = new Board(Array(" ","X","O"),Array("O","X","O"),Array("X","O","X"))
+println("not finished board")
+println("winner: " + board.winner)
 
-//board = new Board(Array("X","X","O"),Array("X","O","X"),Array("X","O","X"))
-//println("x won in column board")
-//println("winner: " + board.winner)
+board = new Board(Array("X","X","O"),Array("X","O","X"),Array("X","O","X"))
+println("x won in column board")
+println("winner: " + board.winner)
 
-//board = new Board(Array("O","X","X"),Array("X","O","X"),Array("O","O","O"))
-//println("O won in row board")
-//println("winner: " + board.winner)
+board = new Board(Array("O","X","X"),Array("X","O","X"),Array("O","O","O"))
+println("O won in row board")
+println("winner: " + board.winner)
 
-val board = Board.empty
+board = Board.empty
 println("Empty board")
 println("winner: " + board.winner)
 
